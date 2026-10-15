@@ -2,7 +2,10 @@
 export const site = {
   name: "Prashant Jani",
   role: "Frontend Engineer & Data Analyst",
-  url: (process.env.NEXT_PUBLIC_SITE_URL ?? "https://prashantjani.dev").replace(/\/$/, ""),
+  url: (() => {
+    const raw = (process.env.NEXT_PUBLIC_SITE_URL || "https://prashantjani.dev").trim().replace(/\/+$/, "");
+    return /^https?:\/\//.test(raw) ? raw : `https://${raw}`;
+  })(),
   title: "Prashant Jani — Frontend Engineer & Data Analyst Portfolio",
   description:
     "Frontend engineer with 6+ years in React and TypeScript, moving into data analytics with Python and SQL. See projects, client sites and get in touch.",
