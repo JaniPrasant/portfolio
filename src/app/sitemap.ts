@@ -10,5 +10,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 1,
       images: [`${site.url}/img/portrait.webp`],
     },
+    ...["privacy", "terms"].map((path) => ({
+      url: `${site.url}/${path}`,
+      lastModified: new Date(`${site.legalUpdated}T00:00:00Z`),
+      changeFrequency: "yearly" as const,
+      priority: 0.3,
+    })),
   ];
 }

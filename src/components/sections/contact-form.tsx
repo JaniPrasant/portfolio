@@ -4,8 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { ArrowRight, CircleAlert, Trash2 } from "lucide-react";
 import { contactTopics } from "@/lib/content";
-import { validateField, type ContactField } from "@/lib/contact-schema";
-import { storageKeys } from "@/lib/site";
+import { CONSENT_ERROR, validateField, type ContactField } from "@/lib/contact-schema";
+import { site, storageKeys } from "@/lib/site";
 import { safeStorage } from "@/lib/utils";
 import { useUI } from "@/components/providers/ui-provider";
 import { burstConfetti } from "@/components/effects/confetti";
@@ -41,6 +41,9 @@ export function ContactForm() {
   const [serverError, setServerError] = useState("");
   const [sentTo, setSentTo] = useState({ name: "", email: "" });
   const [simulateFailure, setSimulateFailure] = useState(false);
+  // DPDP Act: consent must be a clear action, so the box always starts unticked.
+  const [consent, setConsent] = useState(false);
+  const [consentError, setConsentError] = useState("");
   const startedAt = useRef(0);
   const formRef = useRef<HTMLFormElement>(null);
   const successRef = useRef<HTMLDivElement>(null);
@@ -70,6 +73,8 @@ export function ContactForm() {
   const reset = () => {
     setValues(empty);
     setErrors({});
+    setConsent(false);
+    setConsentError("");
     setServerError("");
     setStatus("idle");
     startedAt.current = Date.now();
@@ -82,7 +87,8 @@ export function ContactForm() {
     const next: Partial<Record<ContactField, string>> = {};
     for (const f of fields) next[f] = validateField(f, values[f]);
     setErrors(next);
-    const firstBad = fields.find((f) => next[f]);
+    setConsentError(consent ? "" : CONSENT_ERROR);
+    const firstBad = fields.find((f) => next[f]) ?? (consent ? undefined : "consent");
     if (firstBad) {
       formRef.current?.querySelector<HTMLElement>(`[name="${firstBad}"]`)?.focus();
       return;
@@ -101,7 +107,7 @@ export function ContactForm() {
       const res = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...values, startedAt: startedAt.current, utm }),
+        body: JSON.stringify({ ...values, consent, startedAt: startedAt.current, utm }),
       });
       const data = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string; fieldErrors?: Partial<Record<ContactField, string>> };
       if (res.ok && data.ok) {
@@ -110,9 +116,14 @@ export function ContactForm() {
         const rect = formRef.current?.getBoundingClientRect();
         if (rect) burstConfetti({ x: rect.left + rect.width / 2, y: rect.top + 120 });
         setValues(empty);
+        setConsent(false);
         return;
       }
-      if (data.fieldErrors) setErrors(data.fieldErrors);
+      if (data.fieldErrors) {
+        const { consent: c, ...rest } = data.fieldErrors as Partial<Record<ContactField | "consent", string>>;
+        setErrors(rest);
+        if (c) setConsentError(c);
+      }
       setServerError(data.error ?? "The server didn't accept the message. Check your connection and try again, or email me directly.");
       setStatus("error");
     } catch {
@@ -122,7 +133,7 @@ export function ContactForm() {
   };
 
   const onClear = async () => {
-    const hasContent = [values.name, values.email, values.company, values.message].some((v) => v.trim());
+    const hasContent = [values.name, values.email, values.company, values.message].some((v) => v.trim()) || consent;
     if (!hasContent) {
       toast("The form is already empty");
       return;
@@ -291,6 +302,35 @@ export function ContactForm() {
             <input id="f-website" name="website" tabIndex={-1} autoComplete="off" value={values.website} onChange={(e) => set("website", e.target.value)} />
           </div>
 
+          <motion.div variants={fieldVariants} className="flex flex-col gap-1.5 sm:col-span-2">
+            <label htmlFor="f-consent" className="flex cursor-pointer items-start gap-2.5 text-[13px] leading-snug text-fg-2">
+              <input
+                id="f-consent"
+                name="consent"
+                type="checkbox"
+                className="mt-0.5 size-4 flex-none cursor-pointer accent-a1"
+                checked={consent}
+                onChange={(e) => {
+                  setConsent(e.target.checked);
+                  if (e.target.checked) setConsentError("");
+                }}
+                aria-invalid={consentError ? true : undefined}
+                aria-describedby={consentError ? "e-consent" : "consent-note"}
+              />
+              <span>
+                I agree that Prashant Jani may use my name, email and message only to reply to me, as described in the{" "}
+                <a href="/privacy" target="_blank" rel="noopener" className="text-a1 underline underline-offset-2">
+                  Privacy Policy
+                </a>
+                .
+              </span>
+            </label>
+            <span id="consent-note" className="pl-[26px] text-[12px] text-fg-3">
+              Kept for up to 12 months, then deleted. You can withdraw consent or ask for deletion any time by emailing {site.email}.
+            </span>
+            <FieldError id="e-consent" message={consentError} />
+          </motion.div>
+
           <motion.div variants={fieldVariants} className="mt-1 flex flex-wrap items-center justify-between gap-3 sm:col-span-2">
             {isDev ? (
               <label className="flex items-center gap-2 text-[12.5px] text-fg-3" htmlFor="f-sim">
@@ -298,7 +338,7 @@ export function ContactForm() {
                 Dev only: simulate a failed send
               </label>
             ) : (
-              <p className="text-[12.5px] text-fg-3">Your details are only used to reply to you.</p>
+              <span />
             )}
             <div className="flex flex-wrap gap-2">
               <button type="button" className="btn btn-ghost" onClick={onClear}>

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Cookie } from "lucide-react";
 import { storageKeys } from "@/lib/site";
-import { safeStorage } from "@/lib/utils";
+import { events, safeStorage } from "@/lib/utils";
 import { useUI } from "@/components/providers/ui-provider";
 import { loadAnalytics } from "@/lib/analytics";
 
@@ -24,6 +24,16 @@ export function CookieBanner() {
     return () => clearTimeout(t);
   }, []);
 
+  // "Cookie settings" in the footer reopens the banner, so consent can be withdrawn as easily as it was given.
+  useEffect(() => {
+    const reopen = () => {
+      setDetails(true);
+      setOpen(true);
+    };
+    window.addEventListener(events.openCookies, reopen);
+    return () => window.removeEventListener(events.openCookies, reopen);
+  }, []);
+
   // On phones the banner spans the width, so lift the floating buttons above it.
   useEffect(() => {
     const root = document.documentElement;
@@ -37,10 +47,20 @@ export function CookieBanner() {
   }, [open, details]);
 
   const choose = (c: Consent) => {
+    const previous = safeStorage.get(storageKeys.consent);
     safeStorage.set(storageKeys.consent, c);
-    if (c === "all") loadAnalytics();
     setOpen(false);
-    toast(c === "all" ? "Thanks. Analytics enabled." : "Saved. Essential cookies only.");
+    if (c === "all") {
+      loadAnalytics();
+      toast("Thanks. Analytics enabled.");
+      return;
+    }
+    // Withdrawing consent: reload so an already-loaded analytics script is gone too.
+    if (previous === "all") {
+      window.location.reload();
+      return;
+    }
+    toast("Saved. Essential storage only.");
   };
 
   return (
@@ -60,12 +80,16 @@ export function CookieBanner() {
             <b className="font-display text-[15px] tracking-[-0.01em]">Cookies, kept small</b>
           </div>
           <p className="text-[13.5px] text-fg-2">
-            One cookie remembers your theme and palette. With your OK, privacy-friendly analytics count visits. No ads, no cross-site tracking.
+            Your browser remembers your theme and this choice. With your OK, privacy-friendly analytics count visits. No ads, no tracking pixels, no
+            cross-site tracking.
           </p>
           {details && (
             <p id="cookie-details" className="mt-2 text-[12.5px] text-fg-3">
-              Essential: theme, palette and this choice, stored in your browser. Analytics: page views and referrer only, no personal data, kept for
-              14 months.
+              Essential: theme, palette and this choice, stored only in your browser. Analytics: page views and referrer only, no personal data. You
+              can change this any time from &ldquo;Cookie settings&rdquo; in the footer.{" "}
+              <a href="/privacy#cookies" className="text-fg underline underline-offset-[3px]">
+                Privacy Policy
+              </a>
             </p>
           )}
           <div className="mt-3.5 flex flex-wrap items-center gap-2">

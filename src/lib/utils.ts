@@ -30,6 +30,7 @@ export const events = {
   highlightSkill: "pj:highlight-skill",
   openSearch: "pj:open-search",
   openFaq: "pj:open-faq",
+  openCookies: "pj:open-cookies",
 } as const;
 
 export function emit(name: string, detail?: unknown) {
@@ -41,5 +42,13 @@ export function prefersReducedMotion() {
 }
 
 export function scrollToId(id: string) {
-  document.getElementById(id)?.scrollIntoView({ behavior: prefersReducedMotion() ? "auto" : "smooth" });
+  const el = document.getElementById(id);
+  // On other pages (Privacy, Terms) the section lives on the home page.
+  if (!el) {
+    // A plain full navigation is intended here: the target section is on the home page.
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+    window.location.href = `/#${id}`;
+    return;
+  }
+  el.scrollIntoView({ behavior: prefersReducedMotion() ? "auto" : "smooth" });
 }

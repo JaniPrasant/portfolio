@@ -1,5 +1,7 @@
 import { site } from "@/lib/site";
+import Link from "next/link";
 import { FooterName } from "./footer-name";
+import { CookieSettingsButton } from "@/components/legal/cookie-settings-button";
 
 export function Footer() {
   const year = site.lastUpdated.slice(0, 4);
@@ -21,6 +23,18 @@ export function Footer() {
           <a href="#top" className="no-print no-underline hover:text-fg">
             Back to top ↑
           </a>
+        </nav>
+        <nav aria-label="Legal" className="flex w-full flex-wrap gap-x-4.5 gap-y-2 border-t border-line pt-5 text-[13px] text-fg-3">
+          <Link href="/privacy" className="no-underline hover:text-fg">
+            Privacy Policy
+          </Link>
+          <Link href="/terms" className="no-underline hover:text-fg">
+            Terms of Use
+          </Link>
+          <CookieSettingsButton className="no-print cursor-pointer border-0 bg-transparent p-0 text-inherit hover:text-fg" />
+          <Link href="/privacy#grievance" className="no-underline hover:text-fg">
+            Grievance Officer
+          </Link>
         </nav>
       </div>
     </footer>

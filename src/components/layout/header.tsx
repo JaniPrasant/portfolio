@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
 import { Menu, Search, X } from "lucide-react";
 import { navItems, site } from "@/lib/site";
@@ -71,7 +72,7 @@ export function Header() {
             scrolled && "glass-solid",
           )}
         >
-          <a href="#top" className="flex items-center gap-2.5 whitespace-nowrap font-semibold no-underline" aria-label={`${site.name}, back to top`}>
+          <Link href="/#top" className="flex items-center gap-2.5 whitespace-nowrap font-semibold no-underline" aria-label={`${site.name}, back to top`}>
             <motion.span
               whileHover={{ rotate: -12, scale: 1.12 }}
               whileTap={{ scale: 0.9 }}
@@ -81,7 +82,7 @@ export function Header() {
               PJ
             </motion.span>
             <span>{site.name}</span>
-          </a>
+          </Link>
 
           <nav aria-label="Primary" className="mx-auto hidden xl:block" onMouseLeave={() => setHovered(null)}>
             <ul className="flex gap-0.5 p-1">
@@ -95,7 +96,7 @@ export function Header() {
                     />
                   )}
                   <a
-                    href={`#${item.id}`}
+                    href={`/#${item.id}`}
                     aria-current={active === item.id ? "true" : undefined}
                     onMouseEnter={() => setHovered(item.id)}
                     className="relative z-[1] block rounded-[10px] px-3.5 py-[7px] text-sm text-fg-2 no-underline transition-colors hover:text-fg aria-[current=true]:text-fg"
@@ -164,7 +165,7 @@ export function Header() {
               {navItems.map((item, i) => (
                 <motion.a
                   key={item.id}
-                  href={`#${item.id}`}
+                  href={`/#${item.id}`}
                   onClick={() => setOpen(false)}
                   initial={{ opacity: 0, y: 20, scale: 0.96 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}

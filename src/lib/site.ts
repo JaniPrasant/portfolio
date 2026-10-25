@@ -17,6 +17,9 @@ export const site = {
   resumeSizeLabel: "PDF, about 37 KB",
   lastUpdated: "2026-10-09",
   lastUpdatedLabel: "9 Oct 2026",
+  /** Effective date of the Privacy Policy and Terms. Change it whenever you edit either page. */
+  legalUpdated: "2026-10-25",
+  legalUpdatedLabel: "25 October 2026",
   socials: [
     { label: "GitHub", href: "https://github.com/JaniPrasant" },
     { label: "LinkedIn", href: "https://www.linkedin.com/in/jani-prasant-2810/" },

@@ -24,6 +24,11 @@ function clientIp(req: Request) {
 
 /** Only accept posts from this site (blocks cross-site form abuse). */
 function sameOrigin(req: Request) {
+  // Browsers set Sec-Fetch-Site themselves and pages can't fake it, so it is a reliable same-site signal
+  // even when a browser leaves out the Origin header on same-origin requests.
+  const fetchSite = req.headers.get("sec-fetch-site");
+  if (fetchSite === "same-origin") return true;
+  if (fetchSite === "cross-site" || fetchSite === "same-site") return false;
   const origin = req.headers.get("origin");
   if (!origin) return false;
   try {
@@ -36,6 +41,7 @@ function sameOrigin(req: Request) {
 }
 
 function buildEmail(d: ContactData) {
+  const consentLine = `Consent to the Privacy Policy given at ${new Date().toISOString()}`;
   const utm = Object.entries(d.utm)
     .map(([k, v]) => `${escapeHtml(k)}=${escapeHtml(v)}`)
     .join(" · ");
@@ -52,8 +58,9 @@ function buildEmail(d: ContactData) {
   <table>${rows}</table>
   <p style="white-space:pre-wrap;margin:16px 0;padding:14px;border-radius:10px;background:#f4f5fb">${escapeHtml(d.message)}</p>
   ${utm ? `<p style="color:#667;font-size:13px">Campaign: ${utm}</p>` : ""}
+  <p style="color:#667;font-size:13px">${consentLine}. Delete this email within 12 months (Privacy Policy).</p>
 </div>`;
-  const text = `New message from your portfolio\n\nName: ${d.name}\nEmail: ${d.email}\nCompany: ${d.company || "—"}\nTopic: ${d.topic}\n\n${d.message}${utm ? `\n\nCampaign: ${Object.entries(d.utm).map(([k, v]) => `${k}=${v}`).join(" · ")}` : ""}`;
+  const text = `New message from your portfolio\n\nName: ${d.name}\nEmail: ${d.email}\nCompany: ${d.company || "—"}\nTopic: ${d.topic}\n\n${d.message}${utm ? `\n\nCampaign: ${Object.entries(d.utm).map(([k, v]) => `${k}=${v}`).join(" · ")}` : ""}\n\n${consentLine}. Delete this email within 12 months (Privacy Policy).`;
   return { html, text };
 }
 
@@ -89,7 +96,7 @@ export async function POST(req: Request) {
     const fieldErrors: Record<string, string> = {};
     for (const issue of parsed.error.issues) {
       const key = String(issue.path[0] ?? "");
-      if (["name", "email", "message"].includes(key) && !fieldErrors[key]) fieldErrors[key] = issue.message;
+      if (["name", "email", "message", "consent"].includes(key) && !fieldErrors[key]) fieldErrors[key] = issue.message;
     }
     // A filled honeypot means a bot: pretend success so it learns nothing.
     if (parsed.error.issues.some((i) => i.path[0] === "website")) return reply({ ok: true });

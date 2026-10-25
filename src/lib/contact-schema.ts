@@ -4,6 +4,8 @@ import { contactTopics } from "./content";
 /** Minimum time (ms) between the form rendering and submission. Faster than this is almost always a bot. */
 export const MIN_FILL_MS = 3000;
 
+export const CONSENT_ERROR = "Tick the box to agree, so I can use your details to reply.";
+
 const trimmed = (min: number, max: number, minMsg: string) =>
   z
     .string()
@@ -22,6 +24,8 @@ export const contactSchema = z.object({
   company: z.string().trim().max(100, "Keep this under 100 characters.").optional().default(""),
   topic: z.enum(contactTopics),
   message: trimmed(20, 2000, "Add a little more detail: at least 20 characters."),
+  /** DPDP Act: clear, affirmative consent. The box starts unticked and must be ticked to send. */
+  consent: z.literal(true, { error: CONSENT_ERROR }),
   /** Honeypot: hidden from people, filled by naive bots. Must stay empty. */
   website: z.string().max(0).optional().default(""),
   /** Epoch ms when the form was rendered, for the minimum fill time check. */
