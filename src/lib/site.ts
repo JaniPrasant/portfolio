@@ -9,7 +9,7 @@ export const site = {
   title: "Prashant Jani — Frontend Engineer & Data Analyst Portfolio",
   description:
     "Frontend engineer with 6+ years in React and TypeScript, moving into data analytics with Python and SQL. See projects, client sites and get in touch.",
-  email: "jani.prasant2810@gmail.com",
+  email: "prashanttechfusion@gmail.com",
   phone: "+91 75672 31228",
   location: "Navsari, Gujarat, India",
   timeZone: "Asia/Kolkata",
